@@ -199,11 +199,9 @@
     // Import the modules we need for this example
     //------------------------------------------------------------------------------------------------------------------
 
-    import {Viewer, XKTLoaderPlugin, ContextMenu, TreeViewPlugin, FastNavPlugin, utils} from "../assets/lib/xeokit-sdk.es.js";
+    import {Viewer, XKTLoaderPlugin, ContextMenu, TreeViewPlugin, FastNavPlugin, utils, LASLoaderPlugin} from "../assets/lib/xeokit-sdk.es.js";
 
     import {getRequestParams, signalTestComplete} from "../assets/lib/utils.js";
-
-	import {XKTModel} from '../src/XKTModel/XKTModel.js'
 
     const lasSrc = getRequestParams()["lasSrc"];
 
@@ -751,42 +749,30 @@
     });
 
     //----------------------------------------------------------------------------------------------------------------------
-    // Load a model
+    // Install a LASLoaderPlugin, load a model, fit to view
     //----------------------------------------------------------------------------------------------------------------------
 
-    const xktLoader = new XKTLoaderPlugin(viewer);
-
-
-	utils.loadArraybuffer(lasSrc, async (data) => {
-
-        const xktModel = new XKTModel();
-
-        parseLASIntoXKTModel({data, xktModel, rotateX: true}).then(() => {
-
-            xktModel.finalize().then(() => {
-
-                const xktArrayBuffer = writeXKTModelToArrayBuffer(xktModel);
-
-                xktLoader.load({
-                    id: "LAS",
-                    xkt: xktArrayBuffer,
-                    edges: true
-                });
-
-                viewer.cameraFlight.flyTo(viewer.scene);
-            });
-			xktModel.on("loaded", function () {
-				const t1 = performance.now();
-				//document.getElementById("time").innerHTML = "Model loaded in " + Math.floor(t1 - t0) / 1000.0 + " seconds<br>Objects: " + model.numEntities;
-
-				viewer.cameraFlight.jumpTo(xktModel);
-			});
-        });
-    },
-    (errMsg) => {
+    const lasLoader = new LASLoaderPlugin(viewer, {
+        skip: 10, // Load every 10th point
+        fp64: false, // Positions expected in 32-bit floats instead of 64-bit
+        colorDepth: "auto" // Whether colors encoded using 8 or 16 bits - accepted values are "auto", 8 and 16
     });
+
+
+    //----------------------------------------------------------------------------------------------------------------------
+    // Load a model
+    //----------------------------------------------------------------------------------------------------------------------
     const t0 = performance.now();
     //document.getElementById("time").innerHTML = "Loading model...";
+    const sceneModel = lasLoader.load({
+        id: "myModel",
+        src: lasSrc
+    });
+
+    sceneModel.on("loaded", () => {
+        const t1 = performance.now();
+		viewer.cameraFlight.jumpTo(sceneModel);
+    });
 
 
     // For debugging
