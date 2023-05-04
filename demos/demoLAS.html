@@ -199,7 +199,7 @@
     // Import the modules we need for this example
     //------------------------------------------------------------------------------------------------------------------
 
-    import {Viewer, XKTLoaderPlugin, ContextMenu, TreeViewPlugin, FastNavPlugin, utils, LASLoaderPlugin} from "../assets/lib/xeokit-sdk.es.js";
+    import {Viewer, XKTLoaderPlugin, FastNavPlugin, LASLoaderPlugin, TreeViewPlugin, ContextMenu} from "../assets/lib/xeokit-sdk.es.js";
 
     import {getRequestParams, signalTestComplete} from "../assets/lib/utils.js";
 
@@ -223,7 +223,18 @@
     viewer.camera.project.far = 1000000;
 
     new FastNavPlugin(viewer);
+    //------------------------------------------------------------------------------------------------------------------
+    // Configure points material
+    //------------------------------------------------------------------------------------------------------------------
 
+    viewer.scene.pointsMaterial.pointSize = 2;
+    viewer.scene.pointsMaterial.roundPoints = false;
+    viewer.scene.pointsMaterial.perspectivePoints = true;
+    viewer.scene.pointsMaterial.minPerspectivePointSize = 2;
+    viewer.scene.pointsMaterial.maxPerspectivePointSize = 4;
+    viewer.scene.pointsMaterial.filterIntensity = true;
+    viewer.scene.pointsMaterial.minIntensity = 0;
+    viewer.scene.pointsMaterial.maxIntensity = 1;
     //----------------------------------------------------------------------------------------------------------------------
     // Create a tree view
     //----------------------------------------------------------------------------------------------------------------------
