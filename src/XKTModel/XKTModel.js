@@ -14,10 +14,6 @@ import {mergeVertices} from "../lib/mergeVertices.js";
 import {XKT_INFO} from "../XKT_INFO.js";
 import {XKTTexture} from "./XKTTexture";
 import {XKTTextureSet} from "./XKTTextureSet";
-import {encode} from "@loaders.gl/core";
-import {KTX2BasisWriter} from "@loaders.gl/textures";
-import {ImageLoader} from '@loaders.gl/images';
-import {load} from '@loaders.gl/core';
 
 const tempVec4a = math.vec4([0, 0, 0, 1]);
 const tempVec4b = math.vec4([0, 0, 0, 1]);
@@ -1025,8 +1021,6 @@ class XKTModel {
 
         this._removeUnusedTextures();
 
-        await this._compressTextures();
-
         this._bakeSingleUseGeometryPositions();
 
         this._bakeAndOctEncodeNormals();
@@ -1061,94 +1055,6 @@ class XKTModel {
         }
         this.texturesList = texturesList;
         this.textures = textures;
-    }
-
-    _compressTextures() {
-        let countTextures = this.texturesList.length;
-        return new Promise((resolve) => {
-            if (countTextures === 0) {
-                resolve();
-                return;
-            }
-            for (let i = 0, leni = this.texturesList.length; i < leni; i++) {
-                const texture = this.texturesList[i];
-                const encodingOptions = TEXTURE_ENCODING_OPTIONS[texture.channel] || {};
-
-                if (texture.src) {
-
-                    // XKTTexture created with XKTModel#createTexture({ src: ... })
-
-                    const src = texture.src;
-                    const fileExt = src.split('.').pop();
-                    switch (fileExt) {
-                        case "jpeg":
-                        case "jpg":
-                        case "png":
-                            load(src, ImageLoader, {
-                                image: {
-                                    type: "data"
-                                }
-                            }).then((imageData) => {
-                                if (texture.compressed) {
-                                    encode(imageData, KTX2BasisWriter, encodingOptions).then((encodedData) => {
-                                        const encodedImageData = new Uint8Array(encodedData);
-                                        texture.imageData = encodedImageData;
-                                        if (--countTextures <= 0) {
-                                            resolve();
-                                        }
-                                    }).catch((err) => {
-                                        console.error("[XKTModel.finalize] Failed to encode image: " + err);
-                                        if (--countTextures <= 0) {
-                                            resolve();
-                                        }
-                                    });
-                                } else {
-                                    texture.imageData = new Uint8Array(1);
-                                    if (--countTextures <= 0) {
-                                        resolve();
-                                    }
-                                }
-                            }).catch((err) => {
-                                console.error("[XKTModel.finalize] Failed to load image: " + err);
-                                if (--countTextures <= 0) {
-                                    resolve();
-                                }
-                            });
-                            break;
-                        default:
-                            if (--countTextures <= 0) {
-                                resolve();
-                            }
-                            break;
-                    }
-                }
-
-                if (texture.imageData) {
-
-                    // XKTTexture created with XKTModel#createTexture({ imageData: ... })
-
-                    if (texture.compressed) {
-                        encode(texture.imageData, KTX2BasisWriter, encodingOptions)
-                            .then((encodedImageData) => {
-                                texture.imageData = new Uint8Array(encodedImageData);
-                                if (--countTextures <= 0) {
-                                    resolve();
-                                }
-                            }).catch((err) => {
-                            console.error("[XKTModel.finalize] Failed to encode image: " + err);
-                            if (--countTextures <= 0) {
-                                resolve();
-                            }
-                        });
-                    } else {
-                        texture.imageData = new Uint8Array(1);
-                        if (--countTextures <= 0) {
-                            resolve();
-                        }
-                    }
-                }
-            }
-        });
     }
 
     _bakeSingleUseGeometryPositions() {
